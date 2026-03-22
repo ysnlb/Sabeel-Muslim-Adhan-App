@@ -1,0 +1,5 @@
+{
+  "name": "Islamic Adhan App",
+  "description": "A premium Islamic Prayer Times app with Qibla compass, Hijri calendar, and beautiful animations.",
+  "requestFramePermissions": ["geolocation"]
+}
