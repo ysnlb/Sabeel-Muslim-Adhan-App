@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
+import 'package:home_widget/home_widget.dart'; // هادي زدناها باش نحدثو الـ Widget
 import '../models/models.dart';
 
 /// Manages all local notifications: adhan alerts + persistent "next prayer".
@@ -71,7 +72,6 @@ class NotificationService {
       final scheduledTZ = tz.TZDateTime.from(time, tz.local);
 
       await _plugin.zonedSchedule(
-        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
         _prayerNotifIds[key]!,
         '🕌 ${prayerNames[key] ?? key}',
         '${prayerNames[key] ?? key} - حان وقت الصلاة',
@@ -96,23 +96,25 @@ class NotificationService {
           ),
         ),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: null, // One-shot for today
       );
     }
   }
 
-  // ── Persistent Notification ───────────────────────────────
+  // ── Persistent Notification & Widget Update ───────────────
 
-  /// Show or update the silent persistent notification displaying the next
-  /// prayer name and time.
+  /// Show or update the silent persistent notification AND update the Home Widget
   static Future<void> showPersistentNotification({
     required String nextPrayerName,
     required String nextPrayerTime,
   }) async {
+    // 1. تحديث الإشعار الدائم
     await _plugin.show(
       _persistentNotifId,
-      '🕌 $nextPrayerName',
-      nextPrayerTime,
+      'الصلاة القادمة: $nextPrayerName 🕌',
+      'الوقت: $nextPrayerTime',
       const NotificationDetails(
         android: AndroidNotificationDetails(
           _persistentChannelId,
@@ -132,6 +134,13 @@ class NotificationService {
           presentSound: false,
         ),
       ),
+    );
+
+    // 2. تحديث الـ Widget في الشاشة الرئيسية
+    await HomeWidget.saveWidgetData<String>('next_prayer_name', nextPrayerName);
+    await HomeWidget.saveWidgetData<String>('next_prayer_time', nextPrayerTime);
+    await HomeWidget.updateWidget(
+      androidName: 'PrayerWidgetReceiver', 
     );
   }
 

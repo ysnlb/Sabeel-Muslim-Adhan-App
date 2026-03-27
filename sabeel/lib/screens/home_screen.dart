@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../providers/app_providers.dart';
+import '../services/notification_service.dart'; // هادي زدناها باش نعيطو للإشعارات
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -23,6 +24,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+
+    // هادا هو الكود السحري لي يخدم كي يقلع التطبيق ديريكت
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // 1. نأنسطاليو الإشعارات ونطلبو الصلاحيات (Permissions)
+      await NotificationService.init();
+      
+      // 2. إيلا كاين أوقات الصلاة (اللوكاليزاسيون كاينة)، نحدثو الـ Widget والإشعار الدائم أوتوماتيكيا
+      final data = ref.read(prayerTimesProvider);
+      if (data != null) {
+        await refreshNotificationsAndWidget(ref);
+      }
+    });
   }
 
   @override

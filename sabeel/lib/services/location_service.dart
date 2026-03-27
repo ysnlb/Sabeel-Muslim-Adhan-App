@@ -1,9 +1,9 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 
-/// Handles GPS position and reverse-geocoding.
+/// Handles GPS position and reverse-geocoding (and forward geocoding for city names).
 class LocationService {
-  /// Check & request permissions, then return the current position.
+  /// Check & request permissions, then return the current position (GPS).
   static Future<Position> getCurrentPosition() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
@@ -21,8 +21,31 @@ class LocationService {
       throw Exception('Location permission permanently denied.');
     }
 
-    // هادا هو السطر لي تصلح
     return await Geolocator.getCurrentPosition();
+  }
+
+  /// الحصول على الإحداثيات من اسم المدينة مباشرة (الطريقة اليدوية)
+  static Future<Position?> getCoordinatesFromCity(String cityName) async {
+    try {
+      List<Location> locations = await locationFromAddress(cityName);
+      if (locations.isNotEmpty) {
+        return Position(
+          latitude: locations.first.latitude,
+          longitude: locations.first.longitude,
+          timestamp: DateTime.now(),
+          accuracy: 100.0,
+          altitude: 0.0,
+          heading: 0.0,
+          speed: 0.0,
+          speedAccuracy: 0.0,
+          altitudeAccuracy: 0.0,
+          headingAccuracy: 0.0,
+        );
+      }
+    } catch (e) {
+      print("Error finding city: $e");
+    }
+    return null; // يرجع null إيلا مالقاش المدينة
   }
 
   /// Reverse-geocode coordinates to a human-readable city name.

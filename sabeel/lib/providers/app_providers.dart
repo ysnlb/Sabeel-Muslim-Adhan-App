@@ -129,8 +129,29 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
       final city =
           await LocationService.getCityName(pos.latitude, pos.longitude);
       setLocation(pos.latitude, pos.longitude, city);
+      setUseGPS(true); // تأكيد بلي رانا نخدمو بالـ GPS
     } catch (e) {
       rethrow;
+    }
+  }
+
+  /// البحث عن الإحداثيات بواسطة اسم المدينة (يدويا)
+  Future<bool> fetchLocationByCity(String cityInput) async {
+    try {
+      final pos = await LocationService.getCoordinatesFromCity(cityInput);
+      if (pos != null) {
+        // نزيدو نأكدو اسم المدينة الصحيح باش يخرج مريڨل
+        final formattedCity = await LocationService.getCityName(pos.latitude, pos.longitude);
+        final finalCityName = formattedCity.isNotEmpty ? formattedCity : cityInput;
+
+        setLocation(pos.latitude, pos.longitude, finalCityName);
+        setUseGPS(false); // نطفو الـ GPS لخاطر استعملنا البحث اليدوي
+        return true; 
+      }
+      return false; // مالقاش المدينة
+    } catch (e) {
+      print("Error fetching city: $e");
+      return false;
     }
   }
 }
@@ -185,11 +206,11 @@ Future<void> refreshNotificationsAndWidget(WidgetRef ref) async {
 
   // Schedule adhan notifications
   final nameMap = <String, String>{
-    'fajr': 'Fajr',
-    'dhuhr': 'Dhuhr',
-    'asr': 'Asr',
-    'maghrib': 'Maghrib',
-    'isha': 'Isha',
+    'fajr': 'الفجر', 
+    'dhuhr': 'الظهر',
+    'asr': 'العصر',
+    'maghrib': 'المغرب',
+    'isha': 'العشاء',
   };
   await NotificationService.scheduleAdhanNotifications(data, nameMap);
 
@@ -197,13 +218,13 @@ Future<void> refreshNotificationsAndWidget(WidgetRef ref) async {
   final next = data.nextPrayer();
   if (next != null) {
     await NotificationService.showPersistentNotification(
-      nextPrayerName: next.key,
+      nextPrayerName: nameMap[next.key] ?? next.key,
       nextPrayerTime: fmt.format(next.value),
     );
   } else {
     final tmrFajr = ref.read(tomorrowFajrProvider);
     await NotificationService.showPersistentNotification(
-      nextPrayerName: 'Fajr',
+      nextPrayerName: 'الفجر',
       nextPrayerTime: tmrFajr != null ? fmt.format(tmrFajr) : '--:--',
     );
   }
