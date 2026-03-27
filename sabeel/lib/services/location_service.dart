@@ -1,7 +1,7 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 
-/// Handles GPS position and reverse-geocoding (and forward geocoding for city names).
+/// Handles GPS position and reverse/forward geocoding.
 class LocationService {
   /// Check & request permissions, then return the current position (GPS).
   static Future<Position> getCurrentPosition() async {
@@ -24,7 +24,7 @@ class LocationService {
     return await Geolocator.getCurrentPosition();
   }
 
-  /// الحصول على الإحداثيات من اسم المدينة مباشرة (الطريقة اليدوية)
+  /// الحصول على الإحداثيات من اسم المدينة مباشرة (الطريقة القديمة)
   static Future<Position?> getCoordinatesFromCity(String cityName) async {
     try {
       List<Location> locations = await locationFromAddress(cityName);
@@ -45,7 +45,43 @@ class LocationService {
     } catch (e) {
       print("Error finding city: $e");
     }
-    return null; // يرجع null إيلا مالقاش المدينة
+    return null;
+  }
+
+  /// البحث عن المدن وإرجاع قائمة بالخيارات (الجديدة)
+  static Future<List<Map<String, dynamic>>> searchCities(String query) async {
+    try {
+      List<Location> locations = await locationFromAddress(query);
+      List<Map<String, dynamic>> results = [];
+      
+      // ندو أول 5 نتائج باش ما نكثروش على المستعمل
+      for (var loc in locations.take(5)) {
+        try {
+          final placemarks = await placemarkFromCoordinates(loc.latitude, loc.longitude);
+          if (placemarks.isNotEmpty) {
+            final p = placemarks.first;
+            // نركبو اسم شباب (المدينة، الولاية، البلد)
+            final nameParts = [p.locality, p.administrativeArea, p.country]
+                .where((e) => e != null && e.toString().isNotEmpty)
+                .toList();
+            
+            final name = nameParts.join(', ');
+            
+            results.add({
+              'name': name.isEmpty ? query : name,
+              'lat': loc.latitude,
+              'lon': loc.longitude
+            });
+          }
+        } catch (_) {
+          // يلا صرى مشكل في تفاصيل وحدة من المدن، يكمل للجاية عادي
+        }
+      }
+      return results;
+    } catch (e) {
+      print("Error searching cities: $e");
+      return [];
+    }
   }
 
   /// Reverse-geocode coordinates to a human-readable city name.

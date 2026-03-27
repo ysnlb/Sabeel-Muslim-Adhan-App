@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/app_providers.dart';
+import '../services/location_service.dart'; // ضرورية باش تخدم دالة البحث عن المدن
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -107,7 +108,7 @@ class SettingsScreen extends ConsumerWidget {
               if (!settings.useGPS)
                 Padding(
                   padding: const EdgeInsets.all(16),
-                  child: _ManualLocationForm(loc: loc), // استدعينا الفورم المحدث هنا
+                  child: _ManualLocationForm(loc: loc), 
                 ),
             ],
           ),
@@ -362,7 +363,7 @@ class _AdjustmentRow extends StatelessWidget {
   }
 }
 
-// ── Manual location form (Updated with Search City Button) ───
+// ── Manual location form (Updated with Choices & Hidden Lat/Lon) ───
 class _ManualLocationForm extends ConsumerStatefulWidget {
   final AppLocalizations loc;
 
@@ -373,8 +374,6 @@ class _ManualLocationForm extends ConsumerStatefulWidget {
 }
 
 class _ManualLocationFormState extends ConsumerState<_ManualLocationForm> {
-  late TextEditingController _latCtrl;
-  late TextEditingController _lonCtrl;
   late TextEditingController _cityCtrl;
   bool _isSearching = false;
 
@@ -382,17 +381,76 @@ class _ManualLocationFormState extends ConsumerState<_ManualLocationForm> {
   void initState() {
     super.initState();
     final settings = ref.read(settingsProvider);
-    _latCtrl = TextEditingController(text: settings.latitude.toStringAsFixed(4));
-    _lonCtrl = TextEditingController(text: settings.longitude.toStringAsFixed(4));
     _cityCtrl = TextEditingController(text: settings.cityName);
   }
 
   @override
   void dispose() {
-    _latCtrl.dispose();
-    _lonCtrl.dispose();
     _cityCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _performSearch() async {
+    final query = _cityCtrl.text.trim();
+    if (query.isEmpty) return;
+
+    setState(() => _isSearching = true);
+    FocusScope.of(context).unfocus();
+
+    final results = await LocationService.searchCities(query);
+    
+    if (!mounted) return;
+    setState(() => _isSearching = false);
+
+    if (results.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('City not found. Please try again.')),
+      );
+      return;
+    }
+
+    if (results.length == 1) {
+      _saveLocation(results.first['lat'], results.first['lon'], results.first['name']);
+    } else {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(widget.loc.tr('location')),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 300,
+            child: ListView.builder(
+              itemCount: results.length,
+              itemBuilder: (context, index) {
+                final item = results[index];
+                return ListTile(
+                  leading: const Icon(Icons.location_city),
+                  title: Text(item['name']),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _saveLocation(item['lat'], item['lon'], item['name']);
+                  },
+                );
+              },
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
+  void _saveLocation(double lat, double lon, String cityName) {
+    final notifier = ref.read(settingsProvider.notifier);
+    notifier.setLocation(lat, lon, cityName);
+    _cityCtrl.text = cityName;
+    
+    refreshNotificationsAndWidget(ref);
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(widget.loc.tr('locationUpdated'))),
+      );
+    }
   }
 
   @override
@@ -400,7 +458,6 @@ class _ManualLocationFormState extends ConsumerState<_ManualLocationForm> {
     final loc = widget.loc;
     return Column(
       children: [
-        // حقل البحث عن المدينة + أيقونة البحث
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
@@ -409,8 +466,10 @@ class _ManualLocationFormState extends ConsumerState<_ManualLocationForm> {
                 controller: _cityCtrl,
                 decoration: InputDecoration(
                   labelText: loc.tr('cityName'),
-                  hintText: 'e.g. Oran, Alger, Maghnia',
+                  hintText: 'e.g. Algiers, Barcelona',
+                  prefixIcon: const Icon(Icons.location_on_outlined),
                 ),
+                onSubmitted: (_) => _performSearch(),
               ),
             ),
             const SizedBox(width: 8),
@@ -418,89 +477,13 @@ class _ManualLocationFormState extends ConsumerState<_ManualLocationForm> {
                 ? const Padding(
                     padding: EdgeInsets.all(12.0),
                     child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2)),
+                        width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
                   )
-                : IconButton(
-                    icon: const Icon(Icons.search),
-                    color: Theme.of(context).colorScheme.primary,
-                    tooltip: 'Search City',
-                    onPressed: () async {
-                      if (_cityCtrl.text.trim().isEmpty) return;
-                      
-                      setState(() => _isSearching = true);
-                      FocusScope.of(context).unfocus(); // تخبية الكلافيير باش تتبان الخدمة شابة
-                      
-                      final notifier = ref.read(settingsProvider.notifier);
-                      final success = await notifier.fetchLocationByCity(_cityCtrl.text.trim());
-                      
-                      if (success) {
-                        await refreshNotificationsAndWidget(ref);
-                        final updatedSettings = ref.read(settingsProvider);
-                        // تعمير الخانات بالإحداثيات الجدد
-                        _latCtrl.text = updatedSettings.latitude.toStringAsFixed(4);
-                        _lonCtrl.text = updatedSettings.longitude.toStringAsFixed(4);
-                        _cityCtrl.text = updatedSettings.cityName;
-                        
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(loc.tr('locationUpdated') ?? 'Location Updated')),
-                          );
-                        }
-                      } else {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('City not found. Please try again.')),
-                          );
-                        }
-                      }
-                      setState(() => _isSearching = false);
-                    },
+                : FilledButton(
+                    onPressed: _performSearch,
+                    child: const Icon(Icons.search),
                   ),
           ],
-        ),
-        const SizedBox(height: 16),
-        // خط العرض والطول (في حالة بغا يزيدهم يدويا)
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _latCtrl,
-                decoration: InputDecoration(labelText: loc.tr('latitude')),
-                keyboardType: const TextInputType.numberWithOptions(
-                    signed: true, decimal: true),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextField(
-                controller: _lonCtrl,
-                decoration: InputDecoration(labelText: loc.tr('longitude')),
-                keyboardType: const TextInputType.numberWithOptions(
-                    signed: true, decimal: true),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        // زر الحفظ اليدوي
-        FilledButton.icon(
-          icon: const Icon(Icons.save),
-          onPressed: () {
-            final lat = double.tryParse(_latCtrl.text) ?? 0.0;
-            final lon = double.tryParse(_lonCtrl.text) ?? 0.0;
-            final notifier = ref.read(settingsProvider.notifier);
-            
-            notifier.setLocation(lat, lon, _cityCtrl.text.trim());
-            refreshNotificationsAndWidget(ref);
-            
-            FocusScope.of(context).unfocus();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(loc.tr('locationUpdated'))),
-            );
-          },
-          label: Text(loc.tr('save')),
         ),
       ],
     );
