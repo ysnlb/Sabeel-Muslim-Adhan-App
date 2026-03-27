@@ -1,4 +1,4 @@
-import 'package:adhan_dart/adhan_dart.dart';
+import 'package:adhan/adhan.dart';
 import '../models/models.dart';
 
 /// Stateless service that computes prayer times for a given day.
@@ -29,9 +29,9 @@ class PrayerCalculationService {
 
       // Set madhab for Asr calculation
       if (madhab == 'Hanafi') {
-        params.madhab = Madhab.Hanafi;
+        params.madhab = Madhab.hanafi;
       } else {
-        params.madhab = Madhab.Shafi;
+        params.madhab = Madhab.shafi;
       }
 
       final times = PrayerTimes(coordinates, dateComponents, params);
@@ -73,28 +73,28 @@ class PrayerCalculationService {
   static CalculationParameters _resolveMethod(String method) {
     switch (method) {
       case 'Egyptian':
-        return CalculationMethod.Egyptian.getParameters();
+        return CalculationMethod.egyptian.getParameters();
       case 'Karachi':
-        return CalculationMethod.Karachi.getParameters();
+        return CalculationMethod.karachi.getParameters();
       case 'UmmAlQura':
-        return CalculationMethod.UmmAlQura.getParameters();
+        return CalculationMethod.umm_al_qura.getParameters();
       case 'Dubai':
-        return CalculationMethod.Dubai.getParameters();
+        return CalculationMethod.dubai.getParameters();
       case 'NorthAmerica':
-        return CalculationMethod.NorthAmerica.getParameters();
+        return CalculationMethod.north_america.getParameters();
       case 'Kuwait':
-        return CalculationMethod.Kuwait.getParameters();
+        return CalculationMethod.kuwait.getParameters();
       case 'Qatar':
-        return CalculationMethod.Qatar.getParameters();
+        return CalculationMethod.qatar.getParameters();
       case 'Singapore':
-        return CalculationMethod.Singapore.getParameters();
+        return CalculationMethod.singapore.getParameters();
       case 'Turkey':
-        return CalculationMethod.Turkey.getParameters();
+        return CalculationMethod.turkey.getParameters();
       case 'Tehran':
-        return CalculationMethod.Tehran.getParameters();
+        return CalculationMethod.tehran.getParameters();
       case 'MuslimWorldLeague':
       default:
-        return CalculationMethod.MuslimWorldLeague.getParameters();
+        return CalculationMethod.muslim_world_league.getParameters();
     }
   }
 }

@@ -71,6 +71,7 @@ class NotificationService {
       final scheduledTZ = tz.TZDateTime.from(time, tz.local);
 
       await _plugin.zonedSchedule(
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
         _prayerNotifIds[key]!,
         '🕌 ${prayerNames[key] ?? key}',
         '${prayerNames[key] ?? key} - حان وقت الصلاة',

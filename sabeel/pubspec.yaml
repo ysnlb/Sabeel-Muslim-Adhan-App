@@ -16,7 +16,6 @@ dependencies:
   flutter_riverpod: ^2.5.1
 
   # Prayer time calculation
-  adhan_dart: ^1.0.6
 
   # Notifications & background
   flutter_local_notifications: ^17.2.4
@@ -37,6 +36,7 @@ dependencies:
 
   # Utilities
   intl: ^0.20.2
+  adhan: ^2.0.0+1
 
 dev_dependencies:
   flutter_test:
