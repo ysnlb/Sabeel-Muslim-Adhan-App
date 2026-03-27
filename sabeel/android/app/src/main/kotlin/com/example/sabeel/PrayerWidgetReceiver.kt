@@ -1,4 +1,5 @@
 package com.example.prayer_app
+import com.example.sabeel.R
 
 import android.appwidget.AppWidgetManager
 import android.content.Context

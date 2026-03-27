@@ -21,9 +21,8 @@ class LocationService {
       throw Exception('Location permission permanently denied.');
     }
 
-    return await Geolocator.getCurrentPosition(
-      Position position = await Geolocator.getCurrentPosition();
-    );
+    // هادا هو السطر لي تصلح
+    return await Geolocator.getCurrentPosition();
   }
 
   /// Reverse-geocode coordinates to a human-readable city name.

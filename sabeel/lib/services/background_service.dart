@@ -100,13 +100,13 @@ Future<void> initBackgroundService() async {
     tag: kBackgroundTaskTag,
     frequency: const Duration(minutes: 15),
     constraints: Constraints(
-      networkType: NetworkType.not_required,
+      networkType: NetworkType.notRequired,
       requiresBatteryNotLow: false,
       requiresCharging: false,
       requiresDeviceIdle: false,
       requiresStorageNotLow: false,
     ),
-    existingWorkPolicy: ExistingWorkPolicy.replace,
+    existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
   );
 }
 
