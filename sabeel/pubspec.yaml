@@ -1,0 +1,60 @@
+name: sabeel
+description: Muslim Prayer Times and Adhkar Application
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^2.5.1
+
+  # Prayer time calculation
+  adhan_dart: ^1.0.6
+
+  # Notifications & background
+  flutter_local_notifications: ^17.2.4
+  workmanager: ^0.5.2
+  timezone: ^0.9.4
+  flutter_timezone: ^3.0.1
+
+  # Location
+  geolocator: ^12.0.0
+  geocoding: ^3.0.0
+  permission_handler: ^11.3.1
+
+  # Persistence
+  shared_preferences: ^2.3.3
+
+  # Home screen widget
+  home_widget: ^0.7.0
+
+  # Utilities
+  intl: ^0.20.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/appicone.png"
+  adaptive_icon_foreground: "assets/appicone.png"
+  adaptive_icon_background: "#1B5E20"
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+    - assets/adhan.mp3
+    - assets/appicone.png
+    - assets/notification.png
